@@ -1,17 +1,21 @@
-import { BadRequestException, Controller } from '@nestjs/common';
-import { UserService } from 'src/user/user.service';
-import * as argon2 from 'argon2';
+import { Controller, Get, Post, Request, UseGuards } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { LocalAuthGuard } from './guards/local-auth.guard';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly authService: AuthService) {}
 
-  async validateUser(email: string, password: string) {
-    const user = await this.userService.findOne(email);
-    const passwordIsMatch = await argon2.verify(user.password, password);
-    if (user && passwordIsMatch) {
-      return user;
-    }
-    throw new BadRequestException('User or password an incorrect');
+  @UseGuards(LocalAuthGuard)
+  @Post('login')
+  async login(@Request() req) {
+    return this.authService.login(req.user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  getProfile(@Request() req) {
+    return req.user;
   }
 }
